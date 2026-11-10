@@ -3,7 +3,7 @@ import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { OFICINA_COORDS, RADIO_PERMITIDO_METROS, calcularDistanciaMetros } from '../utils/geo';
-import { MapPin, LogOut, CheckCircle2, AlertCircle, Clock, Calendar, Radio, ShieldCheck, UserCheck, Utensils, LogIn, LogOut as LogOutIcon, Coffee } from 'lucide-react';
+import { MapPin, LogOut, CheckCircle2, AlertCircle, Clock, Calendar, Radio, ShieldCheck, UserCheck, Utensils, LogIn, LogOut as LogOutIcon, Coffee, PartyPopper } from 'lucide-react';
 
 export default function RelojChecador({ usuario }) {
   const [cargando, setCargando] = useState(false);
@@ -40,19 +40,20 @@ export default function RelojChecador({ usuario }) {
     return () => unsubscribe();
   }, [usuario]);
 
-  // Obtener la lista de tipos ya registrados EL DÍA DE HOY
-  const tiposRegistradosHoy = registros
-    .filter((reg) => {
-      if (!reg.timestamp) return false;
-      const fechaReg = reg.timestamp.toDate();
-      const hoy = new Date();
-      return (
-        fechaReg.getDate() === hoy.getDate() &&
-        fechaReg.getMonth() === hoy.getMonth() &&
-        fechaReg.getFullYear() === hoy.getFullYear()
-      );
-    })
-    .map((reg) => reg.tipo);
+  // Obtener la lista de marcas del día de HOY
+  const registrosHoy = registros.filter((reg) => {
+    if (!reg.timestamp) return false;
+    const fechaReg = reg.timestamp.toDate();
+    const hoy = new Date();
+    return (
+      fechaReg.getDate() === hoy.getDate() &&
+      fechaReg.getMonth() === hoy.getMonth() &&
+      fechaReg.getFullYear() === hoy.getFullYear()
+    );
+  });
+
+  const tiposRegistradosHoy = registrosHoy.map((reg) => reg.tipo);
+  const diaTerminado = tiposRegistradosHoy.includes('Salida Final');
 
   const registrar = (tipo) => {
     setCargando(true);
@@ -87,7 +88,18 @@ export default function RelojChecador({ usuario }) {
             distanciaMetros: Math.round(distancia),
             coordenadas: { lat: latitude, lng: longitude }
           });
-          setMensaje({ tipo: 'exito', texto: `¡Registro de "${tipo}" guardado con éxito!` });
+
+          if (tipo === 'Salida Final') {
+            setMensaje({ 
+              tipo: 'despedida', 
+              texto: '¡Buen trabajo, nos vemos mañana! 👋' 
+            });
+          } else {
+            setMensaje({ 
+              tipo: 'exito', 
+              texto: `¡Registro de "${tipo}" guardado con éxito!` 
+            });
+          }
         } catch (err) {
           console.error(err);
           setMensaje({ tipo: 'error', texto: 'Error al conectar con la base de datos.' });
@@ -191,6 +203,15 @@ export default function RelojChecador({ usuario }) {
             </p>
           </div>
 
+          {/* Banner de Jornada Concluida */}
+          {diaTerminado && (
+            <div className="bg-gradient-to-r from-orange-950/60 via-slate-900 to-amber-950/60 border border-orange-500/30 rounded-2xl p-4 text-center shadow-lg">
+              <PartyPopper size={28} className="mx-auto text-orange-400 mb-1 animate-bounce" />
+              <h3 className="text-sm font-bold text-orange-300">¡Jornada de hoy completada!</h3>
+              <p className="text-xs text-slate-400 mt-0.5">Buen trabajo, nos vemos mañana.</p>
+            </div>
+          )}
+
           {/* Cuadrícula con los 4 Botones de Registro */}
           <div className="grid grid-cols-2 gap-3">
             
@@ -288,17 +309,22 @@ export default function RelojChecador({ usuario }) {
 
           </div>
 
-          {/* Mensajes de Estado */}
+          {/* Mensajes de Estado y Despedida */}
           {mensaje && (
             <div className={`p-3.5 rounded-2xl flex items-center gap-3 text-xs font-semibold shadow-md ${
               mensaje.tipo === 'error' 
                 ? 'bg-rose-950/90 border border-rose-800 text-rose-200' 
+                : mensaje.tipo === 'despedida'
+                ? 'bg-orange-950/90 border border-orange-700 text-orange-200'
                 : 'bg-emerald-950/90 border border-emerald-800 text-emerald-200'
             }`}>
-              {mensaje.tipo === 'error' 
-                ? <AlertCircle size={20} className="shrink-0 text-rose-400"/> 
-                : <CheckCircle2 size={20} className="shrink-0 text-emerald-400"/>
-              }
+              {mensaje.tipo === 'error' ? (
+                <AlertCircle size={20} className="shrink-0 text-rose-400"/> 
+              ) : mensaje.tipo === 'despedida' ? (
+                <PartyPopper size={20} className="shrink-0 text-orange-400"/>
+              ) : (
+                <CheckCircle2 size={20} className="shrink-0 text-emerald-400"/>
+              )}
               <span>{mensaje.texto}</span>
             </div>
           )}
