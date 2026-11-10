@@ -5,7 +5,7 @@ export const OFICINA_COORDS = {
 };
 
 // Radio máximo en metros para permitir el registro
-export const RADIO_PERMITIDO_METROS = 100;
+export const RADIO_PERMITIDO_METROS = 10;
 
 /**
  * Calcula la distancia en metros entre dos puntos geográficos (Haversine)
