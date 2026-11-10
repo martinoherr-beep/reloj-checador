@@ -3,7 +3,7 @@ import { auth, db } from '../firebase';
 import { signOut } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { OFICINA_COORDS, RADIO_PERMITIDO_METROS, calcularDistanciaMetros } from '../utils/geo';
-import { MapPin, LogOut, CheckCircle2, AlertCircle, Clock, Calendar, Radio, ShieldCheck, UserCheck, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { MapPin, LogOut, CheckCircle2, AlertCircle, Clock, Calendar, Radio, ShieldCheck, UserCheck, Utensils, LogIn, LogOut as LogOutIcon, Coffee } from 'lucide-react';
 
 export default function RelojChecador({ usuario }) {
   const [cargando, setCargando] = useState(false);
@@ -27,11 +27,15 @@ export default function RelojChecador({ usuario }) {
       orderBy('timestamp', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setRegistros(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    }, (err) => {
-      console.error("Error al obtener asistencias:", err);
-    });
+    const unsubscribe = onSnapshot(
+      q, 
+      (snapshot) => {
+        setRegistros(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+      },
+      (err) => {
+        console.error("Error al obtener asistencias:", err);
+      }
+    );
 
     return () => unsubscribe();
   }, [usuario]);
@@ -54,7 +58,7 @@ export default function RelojChecador({ usuario }) {
         if (distancia > RADIO_PERMITIDO_METROS) {
           setMensaje({
             tipo: 'error',
-            texto: `Fuera de la oficina (${Math.round(distancia)}m de distancia. Máx: ${RADIO_PERMITIDO_METROS}m).`
+            texto: `Fuera de rango (${Math.round(distancia)}m de distancia. Máx: ${RADIO_PERMITIDO_METROS}m).`
           });
           setCargando(false);
           return;
@@ -69,7 +73,7 @@ export default function RelojChecador({ usuario }) {
             distanciaMetros: Math.round(distancia),
             coordenadas: { lat: latitude, lng: longitude }
           });
-          setMensaje({ tipo: 'exito', texto: `¡${tipo} registrada correctamente!` });
+          setMensaje({ tipo: 'exito', texto: `¡Registro de "${tipo}" guardado con éxito!` });
         } catch (err) {
           console.error(err);
           setMensaje({ tipo: 'error', texto: 'Error al conectar con la base de datos.' });
@@ -93,17 +97,29 @@ export default function RelojChecador({ usuario }) {
     return { fecha, hora };
   };
 
+  // Helper para asignar colores según el tipo de registro
+  const getBadgeStyle = (tipo) => {
+    switch (tipo) {
+      case 'Entrada Mañana':
+        return { color: 'text-emerald-400', border: 'bg-emerald-500' };
+      case 'Salida a Comer':
+        return { color: 'text-amber-400', border: 'bg-amber-500' };
+      case 'Regreso de Comer':
+        return { color: 'text-blue-400', border: 'bg-blue-500' };
+      case 'Salida Final':
+        return { color: 'text-rose-400', border: 'bg-rose-500' };
+      default:
+        return { color: 'text-slate-400', border: 'bg-slate-500' };
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-center items-center p-3 sm:p-6 font-sans">
-      
-      {/* Contenedor principal estilizado como App Móvil */}
       <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col justify-between">
         
-        {/* Header con Branding Radiorama */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 p-5 border-b border-slate-800/80 relative">
+        {/* Header Radiorama */}
+        <div className="bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 p-5 border-b border-slate-800/80">
           <div className="flex justify-between items-center mb-4">
-            
-            {/* Logo e Identidad de Marca */}
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-orange-500/10 border border-orange-500/40 rounded-2xl flex items-center justify-center text-orange-500 shadow-lg shadow-orange-500/10">
                 <Radio size={20} className="animate-pulse" />
@@ -118,7 +134,6 @@ export default function RelojChecador({ usuario }) {
               </div>
             </div>
 
-            {/* Logout */}
             <button 
               onClick={() => signOut(auth)} 
               className="text-slate-400 hover:text-rose-400 p-2.5 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 transition active:scale-95"
@@ -128,7 +143,6 @@ export default function RelojChecador({ usuario }) {
             </button>
           </div>
 
-          {/* Tarjeta de Usuario Activo */}
           <div className="bg-slate-950/70 border border-slate-800 p-3.5 rounded-2xl flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 text-indigo-400 flex items-center justify-center font-bold text-sm">
@@ -148,10 +162,10 @@ export default function RelojChecador({ usuario }) {
           </div>
         </div>
 
-        {/* Cuerpo de la aplicación */}
+        {/* Cuerpo principal */}
         <div className="p-5 space-y-5">
           
-          {/* Reloj Digital en Tiempo Real */}
+          {/* Reloj Digital */}
           <div className="text-center bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 shadow-inner">
             <p className="text-xs text-orange-400/90 font-semibold tracking-wide uppercase mb-1 flex items-center justify-center gap-1.5">
               <Clock size={13} /> Hora oficial de registro
@@ -164,34 +178,62 @@ export default function RelojChecador({ usuario }) {
             </p>
           </div>
 
-          {/* Botones de Entrada y Salida */}
-          <div className="grid grid-cols-2 gap-3.5">
-            <button
-              onClick={() => registrar('Entrada')}
-              disabled={cargando}
-              className="group relative bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white disabled:opacity-50 p-4 rounded-2xl font-bold transition-all shadow-lg shadow-emerald-950/50 border border-emerald-400/30 flex flex-col items-center justify-center gap-2 overflow-hidden"
-            >
-              <div className="w-10 h-10 rounded-xl bg-emerald-700/60 flex items-center justify-center text-emerald-100 group-hover:scale-110 transition">
-                <ArrowDownLeft size={22} />
-              </div>
-              <span className="text-xs font-extrabold tracking-wide uppercase">Marcar Entrada</span>
-            </button>
+          {/* Cuadrícula con los 4 Botones de Registro */}
+          <div className="grid grid-cols-2 gap-3">
             
+            {/* 1. Entrada Mañana */}
             <button
-              onClick={() => registrar('Salida')}
+              onClick={() => registrar('Entrada Mañana')}
               disabled={cargando}
-              className="group relative bg-rose-600 hover:bg-rose-500 active:scale-95 text-white disabled:opacity-50 p-4 rounded-2xl font-bold transition-all shadow-lg shadow-rose-950/50 border border-rose-400/30 flex flex-col items-center justify-center gap-2 overflow-hidden"
+              className="bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-95 text-emerald-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-emerald-800/60 flex flex-col items-center text-center gap-1.5"
             >
-              <div className="w-10 h-10 rounded-xl bg-rose-700/60 flex items-center justify-center text-rose-100 group-hover:scale-110 transition">
-                <ArrowUpRight size={22} />
+              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <LogIn size={18} />
               </div>
-              <span className="text-xs font-extrabold tracking-wide uppercase">Marcar Salida</span>
+              <span className="text-xs font-bold leading-tight">1. Entrada Mañana</span>
             </button>
+
+            {/* 2. Salida a Comer */}
+            <button
+              onClick={() => registrar('Salida a Comer')}
+              disabled={cargando}
+              className="bg-amber-950/40 hover:bg-amber-900/50 active:scale-95 text-amber-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-amber-800/60 flex flex-col items-center text-center gap-1.5"
+            >
+              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
+                <Utensils size={18} />
+              </div>
+              <span className="text-xs font-bold leading-tight">2. Salida Comida</span>
+            </button>
+
+            {/* 3. Regreso de Comer */}
+            <button
+              onClick={() => registrar('Regreso de Comer')}
+              disabled={cargando}
+              className="bg-blue-950/40 hover:bg-blue-900/50 active:scale-95 text-blue-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-blue-800/60 flex flex-col items-center text-center gap-1.5"
+            >
+              <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
+                <Coffee size={18} />
+              </div>
+              <span className="text-xs font-bold leading-tight">3. Regreso Comida</span>
+            </button>
+
+            {/* 4. Salida Final */}
+            <button
+              onClick={() => registrar('Salida Final')}
+              disabled={cargando}
+              className="bg-rose-950/40 hover:bg-rose-900/50 active:scale-95 text-rose-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-rose-800/60 flex flex-col items-center text-center gap-1.5"
+            >
+              <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                <LogOutIcon size={18} />
+              </div>
+              <span className="text-xs font-bold leading-tight">4. Salida Final</span>
+            </button>
+
           </div>
 
-          {/* Mensajes de Alerta / Estado */}
+          {/* Mensajes de Estado */}
           {mensaje && (
-            <div className={`p-3.5 rounded-2xl flex items-center gap-3 text-xs font-semibold shadow-md animate-fade-in ${
+            <div className={`p-3.5 rounded-2xl flex items-center gap-3 text-xs font-semibold shadow-md ${
               mensaje.tipo === 'error' 
                 ? 'bg-rose-950/90 border border-rose-800 text-rose-200' 
                 : 'bg-emerald-950/90 border border-emerald-800 text-emerald-200'
@@ -204,12 +246,12 @@ export default function RelojChecador({ usuario }) {
             </div>
           )}
 
-          {/* Seccion de Historial */}
+          {/* Historial Reciente */}
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 shadow-xl">
             <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/80">
               <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2 uppercase tracking-wider">
                 <Calendar size={14} className="text-orange-500" />
-                Historial Reciente
+                Marcas del Día / Historial
               </h3>
               <span className="text-[10px] text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-full font-bold">
                 {registros.length} registros
@@ -223,9 +265,9 @@ export default function RelojChecador({ usuario }) {
                   <p className="text-xs font-medium">No hay marcas registradas en tu historial.</p>
                 </div>
               ) : (
-                registros.slice(0, 5).map((reg) => {
+                registros.slice(0, 8).map((reg) => {
                   const { fecha, hora } = formatearFechaHora(reg.timestamp);
-                  const esEntrada = reg.tipo === 'Entrada';
+                  const badge = getBadgeStyle(reg.tipo);
 
                   return (
                     <div 
@@ -233,9 +275,9 @@ export default function RelojChecador({ usuario }) {
                       className="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between hover:border-slate-700 transition"
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-2 h-9 rounded-full ${esEntrada ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-rose-500 shadow-sm shadow-rose-500/50'}`} />
+                        <div className={`w-2 h-9 rounded-full ${badge.border}`} />
                         <div>
-                          <span className={`text-[11px] font-black uppercase tracking-wider ${esEntrada ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          <span className={`text-[11px] font-black uppercase tracking-wider ${badge.color}`}>
                             {reg.tipo}
                           </span>
                           <p className="text-[10px] text-slate-400 capitalize font-medium">
