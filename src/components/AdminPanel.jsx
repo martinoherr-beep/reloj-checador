@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { db } from '../firebase';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
-import { Calendar, Download, Search, Radio, MapPin, User, ArrowLeft, RefreshCw, Lock, KeyRound, AlertCircle } from 'lucide-react';
+import { Calendar, Download, Search, Radio, MapPin, User, ArrowLeft, RefreshCw, Lock, KeyRound, AlertCircle, Users } from 'lucide-react';
 
-// Define aquí la contraseña de acceso al panel
 const CLAVE_ADMIN_CORRECTA = "1234"; // Cambia "1234" por la contraseña que prefieras
 
 export default function AdminPanel({ volverAlChecador }) {
@@ -20,7 +19,7 @@ export default function AdminPanel({ volverAlChecador }) {
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
 
-  // Escuchar toda la colección de asistencias solo cuando el admin ingresa la contraseña
+  // Escuchar asistencias
   useEffect(() => {
     if (!autenticado) return;
 
@@ -44,6 +43,11 @@ export default function AdminPanel({ volverAlChecador }) {
     return () => unsubscribe();
   }, [autenticado]);
 
+  // Extraer lista única de empleados registrados en la base de datos
+  const listaEmpleadosUnicos = Array.from(
+    new Set(registros.map(r => r.usuarioNombre || r.userId).filter(Boolean))
+  ).sort();
+
   const validarAcceso = (e) => {
     e.preventDefault();
     if (passwordInput === CLAVE_ADMIN_CORRECTA) {
@@ -62,11 +66,10 @@ export default function AdminPanel({ volverAlChecador }) {
     return { fecha, hora, jsDate };
   };
 
-  // Filtrado de registros dinámico (Requiere obligatoriamente que haya texto en `busquedaUsuario`)
+  // Filtrado de registros dinámico
   const registrosFiltrados = registros.filter((reg) => {
     const textoBusqueda = busquedaUsuario.trim().toLowerCase();
     
-    // Si no se ha escrito nada en la búsqueda de empleado, no se muestra ningún registro
     if (!textoBusqueda) return false;
 
     const { jsDate } = formatearFechaHora(reg.timestamp);
@@ -89,7 +92,7 @@ export default function AdminPanel({ volverAlChecador }) {
 
   const exportarAExcel = () => {
     if (registrosFiltrados.length === 0) {
-      alert("Busca a un empleado primero para poder exportar sus registros.");
+      alert("Selecciona a un empleado primero para poder exportar sus registros.");
       return;
     }
 
@@ -120,10 +123,9 @@ export default function AdminPanel({ volverAlChecador }) {
     XLSX.writeFile(workbook, `Reporte_Asistencias_${busquedaUsuario.trim().replace(/\s+/g, '_')}_${hoyStr}.xlsx`);
   };
 
-  // PANTALLA 1: Solicitar contraseña antes de mostrar el panel
   if (!autenticado) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4 font-sans">
         <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative">
           <button 
             onClick={volverAlChecador}
@@ -174,7 +176,6 @@ export default function AdminPanel({ volverAlChecador }) {
     );
   }
 
-  // PANTALLA 2: Panel de Administración (Una vez desbloqueado)
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6 font-sans">
       <div className="max-w-5xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden">
@@ -219,20 +220,26 @@ export default function AdminPanel({ volverAlChecador }) {
           </h2>
           
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* Buscar Empleado */}
+            
+            {/* Seleccionar o Buscar Empleado */}
             <div>
               <label className="text-[11px] text-slate-400 font-semibold block mb-1">
-                Escribe el nombre del empleado <span className="text-orange-400">*Requerido</span>
+                Seleccionar Empleado <span className="text-orange-400">*Requerido</span>
               </label>
               <div className="relative">
-                <input 
-                  type="text"
-                  placeholder="Ej. Hector Ogaz..."
+                <select
                   value={busquedaUsuario}
                   onChange={(e) => setBusquedaUsuario(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 pl-9 text-xs text-slate-100 focus:outline-none focus:border-orange-500"
-                />
-                <User size={15} className="absolute left-3 top-2.5 text-slate-500" />
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3.5 py-2 pl-9 text-xs text-slate-100 focus:outline-none focus:border-orange-500 appearance-none cursor-pointer"
+                >
+                  <option value="">-- Elige un empleado --</option>
+                  {listaEmpleadosUnicos.map((emp, i) => (
+                    <option key={i} value={emp}>
+                      {emp}
+                    </option>
+                  ))}
+                </select>
+                <Users size={15} className="absolute left-3 top-2.5 text-slate-500 pointer-events-none" />
               </div>
             </div>
 
@@ -300,13 +307,13 @@ export default function AdminPanel({ volverAlChecador }) {
                     <td colSpan="5" className="text-center py-10 text-slate-400">
                       <User size={32} className="mx-auto mb-2 opacity-30 text-orange-400" />
                       <p className="text-xs font-bold text-slate-300">Consulta de Empleados</p>
-                      <p className="text-[11px] text-slate-500 mt-0.5">Ingresa el nombre o correo del empleado en la barra de búsqueda para ver sus registros.</p>
+                      <p className="text-[11px] text-slate-500 mt-0.5">Selecciona un empleado de la lista para ver sus marcas registradas.</p>
                     </td>
                   </tr>
                 ) : registrosFiltrados.length === 0 ? (
                   <tr>
                     <td colSpan="5" className="text-center py-8 text-slate-500">
-                      No se encontraron marcas para "{busquedaUsuario}".
+                      No se encontraron marcas registradas para "{busquedaUsuario}".
                     </td>
                   </tr>
                 ) : (
