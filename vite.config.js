@@ -18,6 +18,8 @@ export default defineConfig({
         background_color: '#090d16',
         display: 'standalone',
         orientation: 'portrait',
+        start_url: '/',   // <-- Define que la app abra en la raíz del dominio
+        scope: '/',       // <-- Define que toda la app se ejecute dentro de la PWA
         icons: [
           {
             src: 'pwa-192x192.png',
