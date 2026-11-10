@@ -40,6 +40,20 @@ export default function RelojChecador({ usuario }) {
     return () => unsubscribe();
   }, [usuario]);
 
+  // Obtener la lista de tipos ya registrados EL DÍA DE HOY
+  const tiposRegistradosHoy = registros
+    .filter((reg) => {
+      if (!reg.timestamp) return false;
+      const fechaReg = reg.timestamp.toDate();
+      const hoy = new Date();
+      return (
+        fechaReg.getDate() === hoy.getDate() &&
+        fechaReg.getMonth() === hoy.getMonth() &&
+        fechaReg.getFullYear() === hoy.getFullYear()
+      );
+    })
+    .map((reg) => reg.tipo);
+
   const registrar = (tipo) => {
     setCargando(true);
     setMensaje(null);
@@ -97,7 +111,6 @@ export default function RelojChecador({ usuario }) {
     return { fecha, hora };
   };
 
-  // Helper para asignar colores según el tipo de registro
   const getBadgeStyle = (tipo) => {
     switch (tipo) {
       case 'Entrada Mañana':
@@ -182,52 +195,96 @@ export default function RelojChecador({ usuario }) {
           <div className="grid grid-cols-2 gap-3">
             
             {/* 1. Entrada Mañana */}
-            <button
-              onClick={() => registrar('Entrada Mañana')}
-              disabled={cargando}
-              className="bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-95 text-emerald-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-emerald-800/60 flex flex-col items-center text-center gap-1.5"
-            >
-              <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-                <LogIn size={18} />
-              </div>
-              <span className="text-xs font-bold leading-tight">1. Entrada Mañana</span>
-            </button>
+            {(() => {
+              const estaChecado = tiposRegistradosHoy.includes('Entrada Mañana');
+              return (
+                <button
+                  onClick={() => registrar('Entrada Mañana')}
+                  disabled={cargando || estaChecado}
+                  className={`p-3.5 rounded-2xl font-bold transition-all border flex flex-col items-center text-center gap-1.5 ${
+                    estaChecado
+                      ? 'bg-emerald-950/20 border-emerald-900/30 text-emerald-600/60 cursor-not-allowed opacity-40'
+                      : 'bg-emerald-950/40 hover:bg-emerald-900/50 active:scale-95 text-emerald-200 border-emerald-800/60'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${estaChecado ? 'bg-emerald-900/20 text-emerald-700/50' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                    <LogIn size={18} />
+                  </div>
+                  <span className="text-xs font-bold leading-tight">
+                    {estaChecado ? '✓ Entrada Mañana' : '1. Entrada Mañana'}
+                  </span>
+                </button>
+              );
+            })()}
 
             {/* 2. Salida a Comer */}
-            <button
-              onClick={() => registrar('Salida a Comer')}
-              disabled={cargando}
-              className="bg-amber-950/40 hover:bg-amber-900/50 active:scale-95 text-amber-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-amber-800/60 flex flex-col items-center text-center gap-1.5"
-            >
-              <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center">
-                <Utensils size={18} />
-              </div>
-              <span className="text-xs font-bold leading-tight">2. Salida Comida</span>
-            </button>
+            {(() => {
+              const estaChecado = tiposRegistradosHoy.includes('Salida a Comer');
+              return (
+                <button
+                  onClick={() => registrar('Salida a Comer')}
+                  disabled={cargando || estaChecado}
+                  className={`p-3.5 rounded-2xl font-bold transition-all border flex flex-col items-center text-center gap-1.5 ${
+                    estaChecado
+                      ? 'bg-amber-950/20 border-amber-900/30 text-amber-600/60 cursor-not-allowed opacity-40'
+                      : 'bg-amber-950/40 hover:bg-amber-900/50 active:scale-95 text-amber-200 border-amber-800/60'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${estaChecado ? 'bg-amber-900/20 text-amber-700/50' : 'bg-amber-500/20 text-amber-400'}`}>
+                    <Utensils size={18} />
+                  </div>
+                  <span className="text-xs font-bold leading-tight">
+                    {estaChecado ? '✓ Salida Comida' : '2. Salida Comida'}
+                  </span>
+                </button>
+              );
+            })()}
 
             {/* 3. Regreso de Comer */}
-            <button
-              onClick={() => registrar('Regreso de Comer')}
-              disabled={cargando}
-              className="bg-blue-950/40 hover:bg-blue-900/50 active:scale-95 text-blue-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-blue-800/60 flex flex-col items-center text-center gap-1.5"
-            >
-              <div className="w-8 h-8 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center">
-                <Coffee size={18} />
-              </div>
-              <span className="text-xs font-bold leading-tight">3. Regreso Comida</span>
-            </button>
+            {(() => {
+              const estaChecado = tiposRegistradosHoy.includes('Regreso de Comer');
+              return (
+                <button
+                  onClick={() => registrar('Regreso de Comer')}
+                  disabled={cargando || estaChecado}
+                  className={`p-3.5 rounded-2xl font-bold transition-all border flex flex-col items-center text-center gap-1.5 ${
+                    estaChecado
+                      ? 'bg-blue-950/20 border-blue-900/30 text-blue-600/60 cursor-not-allowed opacity-40'
+                      : 'bg-blue-950/40 hover:bg-blue-900/50 active:scale-95 text-blue-200 border-blue-800/60'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${estaChecado ? 'bg-blue-900/20 text-blue-700/50' : 'bg-blue-500/20 text-blue-400'}`}>
+                    <Coffee size={18} />
+                  </div>
+                  <span className="text-xs font-bold leading-tight">
+                    {estaChecado ? '✓ Regreso Comida' : '3. Regreso Comida'}
+                  </span>
+                </button>
+              );
+            })()}
 
             {/* 4. Salida Final */}
-            <button
-              onClick={() => registrar('Salida Final')}
-              disabled={cargando}
-              className="bg-rose-950/40 hover:bg-rose-900/50 active:scale-95 text-rose-200 disabled:opacity-50 p-3.5 rounded-2xl font-bold transition-all border border-rose-800/60 flex flex-col items-center text-center gap-1.5"
-            >
-              <div className="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
-                <LogOutIcon size={18} />
-              </div>
-              <span className="text-xs font-bold leading-tight">4. Salida Final</span>
-            </button>
+            {(() => {
+              const estaChecado = tiposRegistradosHoy.includes('Salida Final');
+              return (
+                <button
+                  onClick={() => registrar('Salida Final')}
+                  disabled={cargando || estaChecado}
+                  className={`p-3.5 rounded-2xl font-bold transition-all border flex flex-col items-center text-center gap-1.5 ${
+                    estaChecado
+                      ? 'bg-rose-950/20 border-rose-900/30 text-rose-600/60 cursor-not-allowed opacity-40'
+                      : 'bg-rose-950/40 hover:bg-rose-900/50 active:scale-95 text-rose-200 border-rose-800/60'
+                  }`}
+                >
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${estaChecado ? 'bg-rose-900/20 text-rose-700/50' : 'bg-rose-500/20 text-rose-400'}`}>
+                    <LogOutIcon size={18} />
+                  </div>
+                  <span className="text-xs font-bold leading-tight">
+                    {estaChecado ? '✓ Salida Final' : '4. Salida Final'}
+                  </span>
+                </button>
+              );
+            })()}
 
           </div>
 
