@@ -17,7 +17,7 @@ export default function RelojChecador({ usuario }) {
     return () => clearInterval(timer);
   }, []);
 
-  // Escuchar historial de asistencias en tiempo real
+  // Escuchar historial de asistencias en tiempo real desde Firestore
   useEffect(() => {
     if (!usuario) return;
 
@@ -40,7 +40,7 @@ export default function RelojChecador({ usuario }) {
     return () => unsubscribe();
   }, [usuario]);
 
-  // Obtener la lista de marcas del día de HOY
+  // Obtener EXCLUSIVAMENTE los registros correspondientes al día de HOY
   const registrosHoy = registros.filter((reg) => {
     if (!reg.timestamp) return false;
     const fechaReg = reg.timestamp.toDate();
@@ -176,7 +176,7 @@ export default function RelojChecador({ usuario }) {
               <div>
                 <span className="text-[10px] text-slate-400 block font-medium">Empleado activo</span>
                 <h2 className="font-bold text-sm text-slate-100 truncate max-w-[170px]">
-                  {usuario?.displayName || 'Empleado Radiorama'}
+                  {usuario?.displayName || usuario?.email}
                 </h2>
               </div>
             </div>
@@ -329,26 +329,27 @@ export default function RelojChecador({ usuario }) {
             </div>
           )}
 
-          {/* Historial Reciente */}
+          {/* Lista de Registros del Día (Empieza vacía al inicio del día) */}
           <div className="bg-slate-950/60 border border-slate-800 rounded-2xl p-4 shadow-xl">
             <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-800/80">
               <h3 className="font-bold text-slate-200 text-xs flex items-center gap-2 uppercase tracking-wider">
                 <Calendar size={14} className="text-orange-500" />
-                Marcas del Día / Historial
+                Marcas del Día
               </h3>
               <span className="text-[10px] text-slate-400 bg-slate-800 px-2.5 py-0.5 rounded-full font-bold">
-                {registros.length} registros
+                {registrosHoy.length} de 4 marcas
               </span>
             </div>
 
             <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
-              {registros.length === 0 ? (
+              {registrosHoy.length === 0 ? (
                 <div className="text-center py-6 text-slate-500">
                   <Clock size={28} className="mx-auto mb-2 opacity-30 text-slate-400" />
-                  <p className="text-xs font-medium">No hay marcas registradas en tu historial.</p>
+                  <p className="text-xs font-medium">Sin marcas el día de hoy.</p>
+                  <p className="text-[10px] text-slate-600 mt-0.5">Se irán agregando a medida que registres cada turno.</p>
                 </div>
               ) : (
-                registros.slice(0, 8).map((reg) => {
+                registrosHoy.map((reg) => {
                   const { fecha, hora } = formatearFechaHora(reg.timestamp);
                   const badge = getBadgeStyle(reg.tipo);
 
